@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Zap, SlidersHorizontal, Target } from "lucide-react";
 import JobCard, { Job } from "@/components/jobs/job-card";
 import { SkeletonCard, EmptyState } from "@/components/ui";
+import { jobsApi } from "@/lib/api";
 
 type Filter = { platform: string; work_mode: string; min_score: number };
 
@@ -18,10 +19,9 @@ export default function JobsPage() {
     setLoading(true);
     setStatus("idle");
     try {
-      const res  = await fetch("http://localhost:8000/api/digest/generate", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail);
-      setJobs(data.jobs ?? []);
+      const res = await jobsApi.getJobs();
+      const data = res.data;
+      setJobs(data);
       setStatus("done");
     } catch {
       setStatus("error");

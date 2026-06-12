@@ -19,7 +19,7 @@ if (typeof window !== "undefined") {
 
 // API functions
 export const jobsApi = {
-  getDigest: () => apiClient.get("/digest/today"),
+  getJobs: () => apiClient.get("/jobs"),
   action: (jobId: string, action: "approve" | "reject" | "save") =>
     apiClient.post(`/jobs/${jobId}/action`, { action }),
 };
