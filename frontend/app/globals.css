@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg:        #0A0A0F;
+  --surface:   #111118;
+  --elevated:  #1A1A24;
+  --border:    #2A2A38;
+  --border-hi: #3A3A4E;
+  --accent:    #F97316;
+  --accent-lo: rgba(249,115,22,0.12);
+  --accent-md: rgba(249,115,22,0.25);
+  --text-1:    #F0F0F5;
+  --text-2:    #8B8BA8;
+  --text-3:    #55556A;
+  --success:   #22C55E;
+  --warning:   #F59E0B;
+  --danger:    #EF4444;
+  --info:      #3B82F6;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-feature-settings: "kern" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--elevated) 25%, var(--border) 50%, var(--elevated) 75%);
+  background-size: 400px 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+/* Score ring animation */
+@keyframes ring-fill {
+  from { stroke-dashoffset: 100; }
+}
+
+/* Fade in */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.2s ease forwards; }

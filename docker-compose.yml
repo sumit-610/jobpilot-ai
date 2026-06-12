@@ -1,0 +1,101 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: jobpilot_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jobpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-jobpilot_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-jobpilot}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobpilot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis (queue + cache) ──────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: jobpilot_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── FastAPI backend ────────────────────────────────────────────────────────
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobpilot_api
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ── Celery worker (scraping + AI tasks) ───────────────────────────────────
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobpilot_worker
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.worker.celery_app worker --loglevel=info --concurrency=4
+
+  # ── Celery beat (cron scheduler — fires 7:52 AM daily) ────────────────────
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobpilot_beat
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - worker
+    command: celery -A app.worker.celery_app beat --loglevel=info --scheduler celery.beat.PersistentScheduler
+
+  # ── Flower — Celery task monitor UI ───────────────────────────────────────
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: jobpilot_flower
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    command: celery -A app.worker.celery_app flower --port=5555
+
+volumes:
+  postgres_data:
