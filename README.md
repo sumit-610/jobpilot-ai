@@ -64,4 +64,3 @@ jobpilot-ai/
 │   │   └── worker/         Celery tasks + beat schedule
 │   └── alembic/            DB migrations
 └── docker-compose.yml
-```
