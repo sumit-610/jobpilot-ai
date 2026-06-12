@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Upload, FileText, CheckCircle, AlertCircle, Briefcase, GraduationCap, Code } from "lucide-react";
 import { Badge } from "@/components/ui";
+import { resumeApi } from "@/lib/api";
 
 type ParsedResume = {
   full_name?: string;
@@ -33,12 +34,13 @@ export default function ResumePage() {
     setStatus("uploading"); setError("");
     const form = new FormData(); form.append("file", file);
     try {
-      const res  = await fetch("http://localhost:8000/api/resume/upload", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail ?? "Upload failed");
-      setParsed(data.parsed); setStatus("done");
+      const res = await resumeApi.upload(file);
+      const data = res.data;
+      setParsed(data.parsed);
+      setStatus("done");
     } catch (e: any) {
-      setError(e.message); setStatus("error");
+      setError(e.response?.data?.detail ?? e.message ?? "Upload failed");
+      setStatus("error");
     }
   }
 
