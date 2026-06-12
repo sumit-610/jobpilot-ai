@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Settings, CheckCircle } from "lucide-react";
+import { usersApi } from "@/lib/api";
 
 type Form = {
   role: string; job_type: string; work_mode: string;
@@ -44,11 +45,7 @@ export default function SettingsPage() {
   async function save() {
     setSaving(true);
     try {
-      await fetch("http://localhost:8000/api/users/preferences", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      await usersApi.updatePreferences(form);
       setSaved(true);
     } catch {}
     finally { setSaving(false); }

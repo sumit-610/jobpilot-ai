@@ -53,7 +53,26 @@ async def get_me(clerk_id: str = Depends(get_current_user_id)):
 @router.put("/preferences")
 async def update_preferences(
     preferences: dict,
-    user_id: str = Depends(get_current_user_id),
+    clerk_id: str = Depends(get_current_user_id),
 ):
-    # TODO: persist to users.preferences
-    return {"status": "ok"}
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(User).where(User.clerk_id == clerk_id)
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            user = User(
+                clerk_id=clerk_id,
+                email=f"{clerk_id}@placeholder.jobpilot.local",
+            )
+            session.add(user)
+
+        user.preferences = preferences
+
+        await session.commit()
+
+        return {
+            "status": "saved",
+            "preferences": user.preferences,
+        }

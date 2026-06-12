@@ -24,6 +24,12 @@ export const jobsApi = {
     apiClient.post(`/jobs/${jobId}/action`, { action }),
 };
 
+export const usersApi = {
+  getMe: () => apiClient.get("/users/me"),
+  updatePreferences: (preferences: any) =>
+    apiClient.put("/users/preferences", preferences),
+};
+
 export const applicationsApi = {
   list: () => apiClient.get("/applications"),
   trigger: (jobId: string) => apiClient.post(`/applications`, { job_id: jobId }),
