@@ -9,27 +9,39 @@ def calculate_match_score(
     score = 0
     reasons = []
 
-    role = (preferences.get("role") or "").lower()
-    title = (job.title or "").lower()
+    # ROLE MATCH (50)
+    role = (preferences.get("role") or "").lower().strip()
+    title = (job.title or "").lower().strip()
 
-    if role and role in title:
+    role_words = set(role.split())
+    title_words = set(title.split())
+
+    overlap = len(role_words & title_words)
+
+    if overlap >= 2:
         score += 50
         reasons.append("Strong role match")
+    elif overlap == 1:
+        score += 25
+        reasons.append("Partial role match")
 
-    pref_location = (preferences.get("location") or "").lower()
-    job_location = (job.location or "").lower()
+    # LOCATION MATCH (20)
+    pref_location = (preferences.get("location") or "").lower().strip()
+    job_location = (job.location or "").lower().strip()
 
     if pref_location and pref_location in job_location:
         score += 20
         reasons.append("Location match")
 
-    pref_mode = (preferences.get("work_mode") or "").lower()
-    job_mode = (job.work_mode or "").lower()
+    # WORK MODE MATCH (10)
+    pref_mode = (preferences.get("work_mode") or "").lower().strip()
+    job_mode = (job.work_mode or "").lower().strip()
 
     if pref_mode and pref_mode == job_mode:
         score += 10
         reasons.append("Preferred work mode")
 
+    # KEYWORD MATCH (20)
     keywords = (
         preferences.get("keywords", "")
         .lower()
