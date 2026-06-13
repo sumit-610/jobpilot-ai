@@ -8,7 +8,8 @@ from sqlalchemy import select, func
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_current_user_id
 from app.models.job import Job
-from app.models.user import UserAction
+from app.models.user import User, UserAction
+from app.services.scoring import calculate_match_score
 
 router = APIRouter()
 
@@ -74,7 +75,7 @@ SAMPLE_JOBS = [
 
 def _make_hash(title: str, company: str) -> str:
     key = f"{company.lower().strip()}:{title.lower().strip()}:sample"
-    return hashlib.sha256(key.encode()).hexdigest()[:64]
+    return hashlib.sha256(key.encode()).hexdigest()
 
 
 @router.get("/")
@@ -83,9 +84,12 @@ async def list_jobs(
 ):
     async with AsyncSessionLocal() as session:
 
-        count_result = await session.execute(select(func.count()).select_from(Job))
+        count_result = await session.execute(
+            select(func.count()).select_from(Job)
+        )
         total = count_result.scalar()
 
+        # Seed sample jobs once
         if total == 0:
             for s in SAMPLE_JOBS:
                 job = Job(
@@ -98,39 +102,71 @@ async def list_jobs(
                     url=s["url"],
                     salary_min=s["salary_min"],
                     salary_max=s["salary_max"],
-                    dedup_hash=_make_hash(s["title"], s["company"]),
+                    dedup_hash=_make_hash(
+                        s["title"],
+                        s["company"],
+                    ),
                 )
                 session.add(job)
+
             await session.commit()
 
+        # Fetch jobs
         result = await session.execute(
             select(Job).order_by(Job.scraped_at.desc())
         )
         jobs = result.scalars().all()
 
-    return [
-        {
-            "id": str(job.id),
-            "title": job.title,
-            "company": job.company,
-            "location": job.location,
-            "job_type": job.job_type,
-            "work_mode": job.work_mode,
-            "url": job.url,
-            "salary_min": job.salary_min,
-            "salary_max": job.salary_max,
+        # Fetch current user
+        user_result = await session.execute(
+            select(User).where(User.clerk_id == clerk_id)
+        )
+        user = user_result.scalar_one_or_none()
 
-            "match_score": 85,
-            "skills_matched": [],
-            "skills_missing": [],
-            "reasoning": "Sample job for MVP testing", 
-        }
-        for job in jobs
-    ]
+        preferences = (
+            user.preferences
+            if user and user.preferences
+            else {}
+        )
+
+        jobs_with_scores = []
+
+        for job in jobs:
+
+            score, reasoning = calculate_match_score(
+                preferences,
+                job,
+            )
+
+            jobs_with_scores.append(
+                {
+                    "id": str(job.id),
+                    "title": job.title,
+                    "company": job.company,
+                    "location": job.location,
+                    "job_type": job.job_type,
+                    "work_mode": job.work_mode,
+                    "platform": job.platform,
+                    "url": job.url,
+                    "salary_min": job.salary_min,
+                    "salary_max": job.salary_max,
+                    "match_score": score,
+                    "skills_matched": [],
+                    "skills_missing": [],
+                    "reasoning": reasoning,
+                }
+            )
+
+        jobs_with_scores.sort(
+            key=lambda x: x["match_score"],
+            reverse=True,
+        )
+
+        return jobs_with_scores
 
 
 class ActionRequest(BaseModel):
-    action: str  # approve | reject | save
+    action: str
 
 
 @router.post("/{job_id}/action")
@@ -139,16 +175,28 @@ async def record_action(
     body: ActionRequest,
     clerk_id: str = Depends(get_current_user_id),
 ):
-    if body.action not in ("approve", "reject", "save"):
-        raise HTTPException(status_code=400, detail="action must be approve | reject | save")
+    if body.action not in (
+        "approve",
+        "reject",
+        "save",
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="action must be approve | reject | save",
+        )
 
     async with AsyncSessionLocal() as session:
+
         action = UserAction(
             job_id=job_id,
             user_id=clerk_id,
             action=body.action,
         )
+
         session.add(action)
         await session.commit()
 
-    return {"status": "ok", "action": body.action}
+    return {
+        "status": "ok",
+        "action": body.action,
+    }
