@@ -4,6 +4,7 @@ from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_current_user_id
 from app.models.user import User
+from app.services.ai.resume_parser import parse_resume_pdf
 
 router = APIRouter()
 
@@ -27,12 +28,7 @@ async def upload_resume(
             detail="File too large (max 5MB)."
         )
 
-    parsed = {
-        "summary": "Resume uploaded successfully",
-        "skills": [],
-        "experience": [],
-        "education": [],
-    }
+    parsed = await parse_resume_pdf(content)
 
     async with AsyncSessionLocal() as session:
         result = await session.execute(

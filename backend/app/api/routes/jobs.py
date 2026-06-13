@@ -119,6 +119,11 @@ async def list_jobs(
             "url": job.url,
             "salary_min": job.salary_min,
             "salary_max": job.salary_max,
+
+            "match_score": 85,
+            "skills_matched": [],
+            "skills_missing": [],
+            "reasoning": "Sample job for MVP testing", 
         }
         for job in jobs
     ]

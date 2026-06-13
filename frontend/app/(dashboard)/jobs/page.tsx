@@ -33,7 +33,7 @@ export default function JobsPage() {
   const visible = jobs.filter((j) =>
     (filter.platform === "all" || j.platform === filter.platform) &&
     (filter.work_mode === "all" || j.work_mode === filter.work_mode) &&
-    j.match_score >= filter.min_score
+    ((j.match_score ?? 100) >= filter.min_score)
   );
 
   const platforms = ["all", ...Array.from(new Set(jobs.map((j) => j.platform)))];
