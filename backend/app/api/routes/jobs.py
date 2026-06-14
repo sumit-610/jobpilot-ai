@@ -168,7 +168,6 @@ async def list_jobs(
 class ActionRequest(BaseModel):
     action: str
 
-
 @router.post("/{job_id}/action")
 async def record_action(
     job_id: UUID,
@@ -187,9 +186,20 @@ async def record_action(
 
     async with AsyncSessionLocal() as session:
 
+        user_result = await session.execute(
+            select(User).where(User.clerk_id == clerk_id)
+        )
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found",
+            )
+
         action = UserAction(
             job_id=job_id,
-            user_id=clerk_id,
+            user_id=user.id,
             action=body.action,
         )
 

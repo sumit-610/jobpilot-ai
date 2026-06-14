@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ExternalLink, CheckCircle, Bookmark, X } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { jobsApi } from "@/lib/api";
+
 
 export type Job = {
   id: string;
@@ -59,12 +61,9 @@ export default function JobCard({ job }: { job: Job }) {
 
   async function act(a: "approve" | "save" | "reject") {
     setAction("loading");
+  
     try {
-      await fetch(`http://localhost:8000/api/jobs/${job.id}/action`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: a }),
-      });
+      await jobsApi.action(job.id, a);
       setAction(a);
     } catch {
       setAction("idle");
