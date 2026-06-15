@@ -197,6 +197,20 @@ async def record_action(
                 detail="User not found",
             )
 
+        existing = await session.execute(
+            select(UserAction).where(
+                UserAction.user_id == user.id,
+                UserAction.job_id == job_id,
+                UserAction.action == body.action,
+            )
+        )
+
+        if existing.scalar_one_or_none():
+            return {
+                "status": "already_exists",
+                "action": body.action,
+            }
+
         action = UserAction(
             job_id=job_id,
             user_id=user.id,

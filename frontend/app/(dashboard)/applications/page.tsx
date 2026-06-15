@@ -1,5 +1,5 @@
 "use client";
-
+import { applicationsApi } from "@/lib/api";
 import { useEffect, useState } from "react";
 import { ClipboardList, ExternalLink } from "lucide-react";
 import { Badge, Skeleton, EmptyState } from "@/components/ui";
@@ -30,11 +30,18 @@ export default function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/applications")
-      .then((r) => r.json())
-      .then((d) => { setApps(Array.isArray(d) ? d : []); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    applicationsApi
+      .list()
+      .then((res) => {
+        setApps(Array.isArray(res.data) ? res.data : []);
+      })
+      .catch((err) => {
+        console.error(err);
+        setApps([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const counts = {

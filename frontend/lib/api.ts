@@ -32,7 +32,14 @@ export const usersApi = {
 
 export const applicationsApi = {
   list: () => apiClient.get("/applications"),
-  trigger: (jobId: string) => apiClient.post(`/applications`, { job_id: jobId }),
+
+  trigger: (jobId: string) =>
+    apiClient.post("/applications", {
+      job_id: jobId,
+    }),
+
+  saved: () =>
+    apiClient.get("/applications/saved"),
 };
 
 export const resumeApi = {

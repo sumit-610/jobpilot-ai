@@ -4,7 +4,7 @@ import { useState } from "react";
 import { ExternalLink, CheckCircle, Bookmark, X } from "lucide-react";
 import { Badge } from "@/components/ui";
 import { cn } from "@/lib/utils";
-import { jobsApi } from "@/lib/api";
+import { jobsApi, applicationsApi } from "@/lib/api";
 
 
 export type Job = {
@@ -64,12 +64,18 @@ export default function JobCard({ job }: { job: Job }) {
   
     try {
       await jobsApi.action(job.id, a);
+  
+      if (a === "approve") {
+        await applicationsApi.trigger(job.id);
+      }
+  
       setAction(a);
-    } catch {
+    } catch (err) {
+      console.error(err);
       setAction("idle");
     }
   }
-
+  
   if (action === "reject") return null;
 
   const workModeLabel: Record<string, string> = {

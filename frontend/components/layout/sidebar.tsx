@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Target,
   ClipboardList,
+  Bookmark,
   FileText,
   Settings,
   Zap,
@@ -15,6 +16,7 @@ import {
 const nav = [
   { href: "/dashboard",     label: "Overview",      icon: LayoutDashboard },
   { href: "/jobs",          label: "Jobs Feed",     icon: Target },
+  { href: "/saved",         label: "Saved Jobs",    icon: Bookmark },
   { href: "/applications",  label: "Applications",  icon: ClipboardList },
   { href: "/resume",        label: "Resume",        icon: FileText },
   { href: "/settings",      label: "Settings",      icon: Settings },
