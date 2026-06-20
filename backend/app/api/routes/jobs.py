@@ -133,10 +133,32 @@ async def list_jobs(
 
         for job in jobs:
 
-            score, reasoning = calculate_match_score(
+            # Job Type Filter
+            if preferences.get("job_type"):
+                if job.job_type != preferences["job_type"]:
+                    continue
+
+            # Work Mode Filter
+            if preferences.get("work_mode"):
+                if (
+                    preferences["work_mode"] != "any"
+                    and job.work_mode != preferences["work_mode"]
+                ):
+                    continue
+
+            score, reasoning, matched_skills = calculate_match_score(
                 preferences,
+                user.resume_parsed if user else {},
                 job,
             )
+
+            # Minimum Score Filter
+            min_score = int(
+                preferences.get("min_score", 0)
+            )
+
+            if score < min_score:
+                continue
 
             jobs_with_scores.append(
                 {
@@ -151,7 +173,7 @@ async def list_jobs(
                     "salary_min": job.salary_min,
                     "salary_max": job.salary_max,
                     "match_score": score,
-                    "skills_matched": [],
+                    "skills_matched": matched_skills,
                     "skills_missing": [],
                     "reasoning": reasoning,
                 }
@@ -163,6 +185,7 @@ async def list_jobs(
         )
 
         return jobs_with_scores
+        
 
 
 class ActionRequest(BaseModel):

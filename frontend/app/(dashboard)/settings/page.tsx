@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 import { Settings, CheckCircle } from "lucide-react";
 import { usersApi } from "@/lib/api";
 
@@ -34,6 +35,31 @@ export default function SettingsPage() {
   const [form, setForm] = useState<Form>(defaultForm);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const { isLoaded, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadPreferences();
+    }, 2000);
+  
+    return () => clearTimeout(timer);
+  }, []);
+
+  async function loadPreferences() {
+    try {
+      const res = await usersApi.getMe();
+  
+      if (res.data?.preferences) {
+        setForm({
+          ...defaultForm,
+          ...res.data.preferences,
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   function set(k: keyof Form) {
     return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

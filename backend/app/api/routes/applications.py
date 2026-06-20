@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.core.security import get_current_user_id
 from app.models.job import Job
-from app.models.user import User, Application
+from app.models.user import User, Application, UserAction
 
 router = APIRouter()
 
@@ -67,6 +67,61 @@ async def list_applications(
 
         return output
 
+
+@router.get("/saved")
+async def list_saved_jobs(
+    clerk_id: str = Depends(get_current_user_id),
+):
+    async with AsyncSessionLocal() as session:
+
+        user_result = await session.execute(
+            select(User).where(User.clerk_id == clerk_id)
+        )
+        user = user_result.scalar_one_or_none()
+
+        if not user:
+            return []
+
+        actions_result = await session.execute(
+            select(UserAction)
+            .where(
+                UserAction.user_id == user.id,
+                UserAction.action == "save",
+            )
+            .order_by(UserAction.created_at.desc())
+        )
+
+        saved_actions = actions_result.scalars().all()
+
+        jobs = []
+
+        for action in saved_actions:
+
+            job_result = await session.execute(
+                select(Job).where(Job.id == action.job_id)
+            )
+            job = job_result.scalar_one_or_none()
+
+            if job:
+                jobs.append(
+                    {
+                        "id": str(job.id),
+                        "title": job.title,
+                        "company": job.company,
+                        "location": job.location,
+                        "url": job.url,
+                        "platform": job.platform,
+                        "work_mode": job.work_mode,
+                        "salary_min": job.salary_min,
+                        "salary_max": job.salary_max,
+                        "match_score": 0,
+                        "skills_matched": [],
+                        "skills_missing": [],
+                        "reasoning": "Saved job",
+                    }
+                )
+
+        return jobs
 
 @router.post("/")
 async def create_application(
